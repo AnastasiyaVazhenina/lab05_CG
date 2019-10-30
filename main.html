@@ -1,0 +1,132 @@
+<HTML>
+<BODY>
+<canvas id="lab05" width="500" height="400">
+</canvas>
+<script>
+    function Line(ctx, x0, y0, x1, y1) {
+        var dy = Math.abs(y1-y0);
+        var dx = Math.abs(x1-x0);
+        var dmax = Math.max(dx, dy);
+        var dmin = Math.min(dx, dy);
+        var xdir = 1;
+        if (x1<x0) xdir = -1;
+        var ydir = 1;
+        if (y1<y0) ydir = -1;
+        var eps = 0;
+        var s = 1;
+        var k=2*dmin;
+        if (dy<=dx) {
+            var y = y0;
+            for (var x=x0; x*xdir<=x1*xdir; x+=xdir) {
+                ctx.fillRect(x*s, y*s, 1*s, 1*s);
+                eps = eps+k;
+                if (eps>dmax) {
+                    y+=ydir;
+                    eps = eps - 2*dmax;
+                }
+            }
+        } else {
+            var x = x0;
+            for (var y=y0; y*ydir<=y1*ydir; y+=ydir) {
+                ctx.fillRect(x*s, y*s, 1*s, 1*s);
+                eps = eps+k;
+                if (eps>dmax) {
+                    x+=xdir;
+                    eps = eps - 2*dmax;
+                }
+            }
+        }
+    }
+</script>
+<script>
+    var canvas = document.getElementById("lab05");
+    var ctx = canvas.getContext("2d");
+    var state = 0;
+    var ax, ay;
+    var bx, by;
+    var p1x, p1y;
+    var p2x, p2y;
+    var ex1, ey1;
+    var ex2, ey2;
+
+    canvas.addEventListener("click", function(event){
+        if (state == 0) {
+            p1x = event.offsetX;
+            p1y = event.offsetY;
+            state = 1;
+        } else if (state == 1) {
+            p2x = event.offsetX;
+            p2y = event.offsetY;
+            Line(ctx, p1x, p1y, p2x, p2y);
+            state = 2;
+        } else if (state == 2) {
+            ax = event.offsetX;
+            ay = event.offsetY;
+            state = 3;
+        } else if (state == 3) {
+            bx = event.offsetX;
+            by = event.offsetY;
+            Line(ctx, ax, ay, bx, by);
+            state = 4;
+        } else if (state == 4) {
+            cx = event.offsetX;
+            cy = event.offsetY;
+            Line(ctx, bx, by, cx, cy);
+            state = 5;
+        } else if (state == 5) {
+            dx = event.offsetX;
+            dy = event.offsetY;
+            Line(ctx, dx, dy, cx, cy);
+            Line(ctx, dx, dy, ax, ay);
+            var vertex = new Array();
+            vertex.push([ax, ay, bx, by]);
+            vertex.push([bx, by, cx, cy]);
+            vertex.push([cx, cy, dx, dy]);
+            vertex.push([dx, dy, ax, ay]);
+            var distance = new Array();
+            distance.push(Math.abs((by-ay)*p1x-(bx-ax)*p1y+bx*ay-by*ax) / (Math.sqrt((by-ay)**2+(bx-ax)**2)));
+            distance.push(Math.abs((cy-by)*p1x-(cx-bx)*p1y+cx*by-cy*bx) / (Math.sqrt((cy-by)**2+(cx-bx)**2)));
+            distance.push(Math.abs((cy-dy)*p1x-(cx-dx)*p1y+cx*dy-cy*dx) / (Math.sqrt((dy-cy)**2+(dx-cx)**2)));
+            distance.push(Math.abs((ay-dy)*p1x-(ax-dx)*p1y+ax*dy-ay*dx) / (Math.sqrt((dy-ay)**2+(dx-ax)**2)));
+            var min = distance[0];
+            var minIndex = 0;
+            for (var i = 1; i < distance.length; i++) {
+                if (distance[i] < min) {
+                    minIndex = i;
+                    min = distance[i];
+                }
+            }
+            var t1 = ( (p1y-p2y)*(vertex[minIndex][0]-p1x)+(p2x-p1x)*(vertex[minIndex][1]-p1y) ) /
+                ( (vertex[minIndex][2]-vertex[minIndex][0])*(p2y-p1y)+(vertex[minIndex][3]-vertex[minIndex][1])*(p1x-p2x) );
+            if (t1<=1 && t1>=0) {
+                ex1 = (vertex[minIndex][2]-vertex[minIndex][0])*t1+vertex[minIndex][0];
+                ey1 = (vertex[minIndex][3]-vertex[minIndex][1])*t1+vertex[minIndex][1];
+            }
+            var distance1 = new Array();
+            distance1.push(Math.abs((by-ay)*p2x-(bx-ax)*p2y+bx*ay-by*ax) / (Math.sqrt((by-ay)**2+(bx-ax)**2)));
+            distance1.push(Math.abs((cy-by)*p2x-(cx-bx)*p2y+cx*by-cy*bx) / (Math.sqrt((cy-by)**2+(cx-bx)**2)));
+            distance1.push(Math.abs((cy-dy)*p2x-(cx-dx)*p2y+cx*dy-cy*dx) / (Math.sqrt((dy-cy)**2+(dx-cx)**2)));
+            distance1.push(Math.abs((ay-dy)*p2x-(ax-dx)*p2y+ax*dy-ay*dx) / (Math.sqrt((dy-ay)**2+(dx-ax)**2)));
+            min = distance1[0];
+            minIndex = 0;
+            for (var i = 1; i < distance1.length; i++) {
+                if (distance1[i] < min) {
+                    minIndex = i;
+                    min = distance1[i];
+                }
+            }
+            var t2 = ( (p1y-p2y)*(vertex[minIndex][0]-p1x)+(p2x-p1x)*(vertex[minIndex][1]-p1y) ) /
+                ( (vertex[minIndex][2]-vertex[minIndex][0])*(p2y-p1y)+(vertex[minIndex][3]-vertex[minIndex][1])*(p1x-p2x) );
+            if (t2<=1 && t2>=0) {
+                ex2 = (vertex[minIndex][2]-vertex[minIndex][0])*t2+vertex[minIndex][0];
+                ey2 = (vertex[minIndex][3]-vertex[minIndex][1])*t2+vertex[minIndex][1];
+            }
+            ctx.fillStyle = "#00ff00";
+            Line(ctx, ex1, ey1, ex2, ey2);
+            ctx.fillStyle = "#000000";
+            state = 0;
+        }
+    });
+</script>
+</BODY>
+</HTML>
